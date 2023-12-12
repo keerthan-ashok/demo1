@@ -1,26 +1,31 @@
 pipeline {
-	agent any
-	tools {
-        maven 'm395' 
+    agent any
+
+    tools {
+        maven '396'
+        jfrog 'jfrog-cli'
     }
-	stages {
-		stage ('build') {
-			steps {
-				sh 'mvn clean install -DskipTests'
-			}
-		
-		}
-		stage ('test') {
-			steps {
-				sh 'mvn test'
-			}
-			post {
-				always {
-					junit 'target/surefire-reports/*.*xml'
-					archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
-				}
-			}
-		}
-	
-	}
+
+    environment {
+        CI = true
+        ARTIFACTORY_ACCESS_TOKEN = credentials('jfrog-token')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    sh 'mvn clean install'
+                }
+            }
+        }
+        
+        stage('Upload to Artifactory') {
+            steps {
+               
+                    jf 'rt u target/demo1-0.0.1-SNAPSHOT.jar my-repo/ --url=http://20.205.127.105:8082/artifactory/ --access-token ${ARTIFACTORY_ACCESS_TOKEN}'
+                
+            }
+        }
+    }
 }
